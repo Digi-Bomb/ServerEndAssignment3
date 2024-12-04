@@ -18,7 +18,7 @@ private:
     // Server address info
     sockaddr_in m_addr;
     // For checking if the manager was successfully bound to the port
-    bool m_bound;
+    bool m_bound, m_close;
 
     // All the client threads
     std::vector<std::thread> m_clients;

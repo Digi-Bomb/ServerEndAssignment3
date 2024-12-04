@@ -7,6 +7,7 @@
 
 SocketManager::SocketManager(int portNumber) {
     // Set port
+    this->m_close = false;
     if (0 < portNumber && portNumber <= 65535) {
         this->m_port = portNumber;
     }
@@ -72,7 +73,8 @@ void SocketManager::Receive(int clientSocket) {
     int recvResult;
     while ((recvResult = recv(clientSocket, recvBuf, RECEIVE_SIZE, 0))) {
         std::string received = recvBuf;
-        if (received.compare("[close]") == 0) {
+        if (received.compare("[exit]") == 0) {
+            this->m_close = true;
             break;
         }
         this->Add(received);
@@ -87,6 +89,9 @@ int SocketManager::Check() {
     while ((newClient = accept(this->m_socket, (sockaddr*)&clientAddr, &length)) != -1) {
         std::thread t(&SocketManager::Receive, this, newClient);
         this->m_clients.push_back(move(t));
+        if (this->m_close) {
+            break;
+        }
     }
     return 0;
 }
