@@ -12,7 +12,7 @@ int main(void) {
 
     // Loop while the server should be running
     while (server.Check()) {
-        
+
     }
     
     return 0;
