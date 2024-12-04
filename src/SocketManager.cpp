@@ -1,7 +1,10 @@
 #include "SocketManager.h"
 
+#include <mutex>
+#include "FileManager.h"
+
 // ----- Default ----- Operations -----
-int total = 0;
+
 SocketManager::SocketManager(int portNumber) {
     // Set port
     if (0 < portNumber && portNumber <= 65535) {
@@ -38,13 +41,23 @@ SocketManager::SocketManager(int portNumber) {
 
     // Everything went properly
     this->m_bound = true;
+
+    // Read data from file
+    auto data = FileManager::Read(FILENAME);
+    for (std::string& str : data) {
+        this->m_posts.push_back(str);
+    }
 }
 
 SocketManager::~SocketManager() {
+    // Close threads
     for (std::thread& thread : this->m_clients) {
         thread.join();
     }
     close(this->m_socket);
+
+    // Write to file
+    FileManager::Write(FILENAME, this->m_posts);
 }
 
 // ----- Read -----
@@ -53,23 +66,18 @@ bool SocketManager::isBound() {
     return this->m_bound;
 }
 
-void log(std::string str) {
-    std::cout << str << std::endl;
-}
-
 // Hidden from other files, but not a member function
-void Receive(int clientSock) {
+void SocketManager::Receive(int clientSocket) {
     char recvBuf[RECEIVE_SIZE] = { 0 };
     int recvResult;
-    while ((recvResult = recv(clientSock, recvBuf, RECEIVE_SIZE, 0))) {
-        std::cout << "Thread: " << std::this_thread::get_id() << std::endl;
-        std::cout << "Data: " << recvBuf << std::endl << std::endl;
-        if (recvBuf[0] =='0') {
-            log("Receive done");
+    while ((recvResult = recv(clientSocket, recvBuf, RECEIVE_SIZE, 0))) {
+        std::string received = recvBuf;
+        if (received.compare("[close]") == 0) {
             break;
         }
+        this->Add(received);
     }
-    close(clientSock);
+    close(clientSocket);
 }
 
 int SocketManager::Check() {
@@ -77,19 +85,16 @@ int SocketManager::Check() {
     socklen_t length = sizeof(clientAddr);
     int newClient;
     while ((newClient = accept(this->m_socket, (sockaddr*)&clientAddr, &length)) != -1) {
-        std::thread t(Receive, newClient);
+        std::thread t(&SocketManager::Receive, this, newClient);
         this->m_clients.push_back(move(t));
-        total++;
-        std::cout << "Total: " << total << std::endl;
-        if (total >= 10) {
-            log("All 10 clients");
-            return 0;
-        }
     }
-    return 1;
+    return 0;
 }
 
-// ----- Private ----- Read -----
+// ----- Update -----
 
-
+void SocketManager::Add(const std::string& post) {
+    std::lock_guard<std::mutex> guard(std::mutex);
+    this->m_posts.push_back(post);
+}
 
