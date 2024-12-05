@@ -64,12 +64,39 @@ void Receive(int clientSock) {
     while ((recvResult = recv(clientSock, recvBuf, RECEIVE_SIZE, 0))) {
         std::cout << "Thread: " << std::this_thread::get_id() << std::endl;
         std::cout << "Data: " << recvBuf << std::endl << std::endl;
-        if (recvBuf[0] =='0') {
+        
+        if (Parse(recvBuf[0]) =="post") {
+            //Do thing
             log("Receive done");
             break;
         }
+        else if (Parse(recvBuf[0])=="requestall"){
+            //Do thing
+        }
+        else if (Parse(recvBuf[0])=="close"){
+            //Do close thing
+        }
     }
     close(clientSock);
+
+}
+
+std::string Parse(char parseBuf[]){
+
+std::string temp;
+if (parseBuf.substr(0,5)=="[post]"){
+    temp="post";
+}
+
+else if (parseBuf.substr(0,11)=="[requestall]"){
+    temp="requestall"
+}
+
+else if (parseBug.substr(0,6)=="[close]"){
+    temp="close"
+}
+
+return temp;
 }
 
 int SocketManager::Check() {
