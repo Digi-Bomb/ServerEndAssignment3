@@ -7,13 +7,11 @@ int main(void) {
     SocketManager server(DEFAULT_PORT);
     if (!server.isBound()) {
         std::cerr << "Something went wrong" << std::endl;
-        return 1;
+        return 0;
     }
 
     // Loop while the server should be running
-    while (server.Check()) {
-
-    }
+    while (!server.ShouldClose()) {}
     
     return 0;
 }
