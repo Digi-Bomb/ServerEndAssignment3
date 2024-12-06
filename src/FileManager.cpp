@@ -33,6 +33,7 @@ void FileManager::Write(const std::string& filename, const std::vector<std::stri
     for (const std::string& datapoint : data) {
         file << datapoint << std::endl;
     }
+
     file.close();
 }
 
