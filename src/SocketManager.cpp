@@ -110,12 +110,15 @@ void SocketManager::Receive(int clientSocket) {
 int SocketManager::Parse(std::string received, int clientSocket) {
     std::cout << "Received: " << received << std::endl;
     std::cout << "Detected: ";
+
+    // Receiving a new post to add
     if (received.substr(0,6).compare("[post]") == 0) {
         std::cout << "Post\n";
         this->Add(received);
         return PARSE_POST;
     }
 
+    // Request for all posts
     else if (received.substr(0,12).compare("[requestall]") == 0) {
         std::cout << "Request All\n";
 
@@ -124,6 +127,12 @@ int SocketManager::Parse(std::string received, int clientSocket) {
         for (std::string& d : this->m_posts) {
             data += d;
         }
+        
+        // If theres no data, send an empty tag
+        if (data.compare("") == 0) {
+            data = "[empty]";
+        }
+
         std::cout << "Sending: " << data.c_str() << "\n";
         if (send(clientSocket, data.c_str(), data.length(), 0) == -1) {
             std::cerr << "Message Send Failure\n";
@@ -132,6 +141,7 @@ int SocketManager::Parse(std::string received, int clientSocket) {
         return PARSE_REQA;
     }
 
+    // Client ending their connection
     else if (received.substr(0,7).compare("[close]") == 0) {
         std::cout << "Client Exiting\n";
         return PARSE_EXIT;
@@ -154,6 +164,7 @@ void SocketManager::Check() {
         // Poll socket for 3000ms
         if (poll(fds, 1, 3000)) {
             if ((newClient = accept(this->m_socket, (sockaddr*)&clientAddr, &length)) != -1) {
+                // Adding to the threadpool, joins instead of detaches
                 std::thread t(&SocketManager::Receive, this, newClient);
                 this->m_clients.push_back(move(t));
             }
